@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes" />
+  <title>KimLicious & Kurt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ----- reset & base ----- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .petal { display: none !important; }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #0B0A09;
+      color: #EDE6D8;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ----- texture overlay (kept) ----- */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ----- background carousel (uses your own images) ----- */
+    .bg-carousel {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #0B0A09;
+    }
+
+    .bg-slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transform: scale(1.06);
+      transition: opacity 1.5s ease, transform 8s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .bg-slide.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* scrim stays above carousel, below content */
+    .bg-scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(11,10,9,0.82) 0%, rgba(11,10,9,0.62) 30%, rgba(11,10,9,0.7) 70%, rgba(11,10,9,0.92) 100%);
+    }
+
+    /* ----- petals (unchanged) ----- */
+    .petal-field {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .petal {
+      position: absolute;
+      top: -40px;
+      will-change: transform, opacity;
+      animation-name: petal-fall, petal-sway;
+      animation-timing-function: linear, ease-in-out;
+      animation-iteration-count: infinite, infinite;
+      opacity: 0.85;
+    }
+    .petal svg { display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
+
+    @keyframes petal-fall {
+      0% { transform: translateY(-8vh) rotate(0deg); }
+      100% { transform: translateY(112vh) rotate(360deg); }
+    }
+    @keyframes petal-sway {
+      0%, 100% { margin-left: -40px; }
+      50% { margin-left: 40px; }
+    }
+
+    /* ----- navigation – mobile first hamburger style ----- */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px clamp(16px, 4vw, 64px);
+      background: linear-gradient(to bottom, rgba(11,10,9,0.92) 0%, transparent 100%);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .nav .mark {
+      font-family: 'Fraunces', serif;
+      font-weight: 600;
+      font-size: clamp(18px, 4vw, 24px);
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav .mark .age {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #0B0A09;
+      background: #C9A24B;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.05em;
+    }
+
+    /* desktop nav links – hidden on mobile */
+    .nav-links {
+      display: none;
+      list-style: none;
+      gap: clamp(16px, 3vw, 36px);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: #9C948487;
+    }
+    .nav-links li a:hover { color: #C9A24B; }
+
+    .nav .cta {
+      display: none; /* hidden on mobile, shown inside mobile menu */
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid #8A7136;
+      padding: 9px 18px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+      transition: all .25s ease;
+    }
+    .nav .cta:hover { background: #C9A24B; color: #0B0A09; border-color: #C9A24B; }
+
+    /* hamburger toggle – always visible on mobile */
+    .nav-toggle {
+      display: flex;
+      width: 44px;
+      height: 44px;
+      border: 1px solid #2A2620;
+      border-radius: 50%;
+      background: rgba(11,10,9,0.6);
+      color: #EDE6D8;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      transition: border-color .25s ease, transform .2s ease, background .25s ease;
+      flex-shrink: 0;
+      backdrop-filter: blur(2px);
+    }
+    .nav-toggle:hover { border-color: #8A7136; background: rgba(201,162,75,0.08); }
+    .nav-toggle:active { transform: scale(0.92); }
+    .nav-toggle.open { border-color: #C9A24B; background: rgba(201,162,75,0.12); }
+    .nav-toggle span {
+      width: 18px;
+      height: 2px;
+      background: #EDE6D8;
+      display: block;
+      transition: transform .25s ease, opacity .25s ease, background .25s ease;
+      border-radius: 2px;
+    }
+    .nav-toggle.open span { background: #C9A24B; }
+    .nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* mobile menu – slides in from top */
+    .nav-mobile {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: rgba(11,10,9,0.98);
+      border-bottom: 1px solid #8A7136;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+      padding: 80px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      transform: translateY(-105%);
+      transition: transform .4s cubic-bezier(.22,.61,.36,1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .nav-mobile::before {
+      content: "Menu";
+      position: absolute;
+      top: 28px;
+      left: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #C9A24B;
+      opacity: 0.7;
+    }
+    .nav-mobile.open { transform: translateY(0); }
+
+    .nav-mobile a {
+      padding: 18px 6px;
+      border-bottom: 1px solid #2A2620;
+      font-size: 18px;
+      font-family: 'Fraunces', serif;
+      font-weight: 400;
+      color: #9C948487;
+      transition: color .2s ease, padding-left .2s ease, background .2s ease;
+      border-radius: 4px;
+    }
+    .nav-mobile a:hover {
+      color: #C9A24B;
+      padding-left: 14px;
+      background: rgba(201,162,75,0.04);
+    }
+    .nav-mobile a:last-child { border-bottom: none; }
+
+    .nav-mobile a.cta-mobile {
+      margin-top: 20px;
+      text-align: center;
+      border: 1px solid #8A7136;
+      border-radius: 2px;
+      color: #C9A24B;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      padding: 16px 6px;
+      background: rgba(201,162,75,0.04);
+      transition: all .25s ease;
+    }
+    .nav-mobile a.cta-mobile:hover {
+      background: #C9A24B;
+      color: #0B0A09;
+      padding-left: 6px;
+      border-color: #C9A24B;
+    }
+
+    /* backdrop for mobile menu */
+    .nav-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 98;
+      background: rgba(11,10,9,0.55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s ease;
+    }
+    .nav-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    body.menu-open { overflow: hidden; }
+
+    /* desktop adjustments */
+    @media (min-width: 780px) {
+      .nav-links { display: flex; }
+      .nav .cta { display: inline-block; }
+      .nav-toggle { display: none; }
+      .nav-mobile { display: none; }
+      .nav-backdrop { display: none; }
+    }
+
+    /* ----- page head (unchanged) ----- */
+    .page-head {
+      position: relative;
+      z-index: 2;
+      padding: 160px clamp(20px, 6vw, 72px) 50px;
+      text-align: center;
+    }
+    .page-head .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: #C9A24B;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 18px;
+    }
+    .page-head .eyebrow::before,
+    .page-head .eyebrow::after {
+      content: ""; width: 26px; height: 1px; background: #C9A24B;
+    }
+    .page-head h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: clamp(34px, 6vw, 68px);
+      line-height: 1.02;
+    }
+    .page-head h1 em { font-style: italic; font-weight: 300; color: #C9A24B; }
+    .page-head p {
+      margin: 20px auto 0;
+      max-width: 480px;
+      color: #9C948487;
+      font-size: 15px;
+    }
+    @media (max-width: 600px) {
+      .page-head { padding: 120px 16px 36px; }
+      .page-head h1 br { display: none; }
+    }
+
+    /* ----- contact layout (unchanged) ----- */
+    .contact-wrap {
+      position: relative;
+      z-index: 2;
+      padding: 0 clamp(16px, 5vw, 72px) 100px;
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 32px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+    @media (max-width: 880px) {
+      .contact-wrap { grid-template-columns: 1fr; gap: 28px; padding-bottom: 60px; }
+    }
+    @media (max-width: 480px) {
+      .contact-wrap { padding: 0 12px 48px; gap: 24px; }
+    }
+
+    .info-card {
+      border: 1px solid #2A2620;
+      background: #15130F;
+      border-radius: 4px;
+      padding: 28px 24px;
+      height: fit-content;
+    }
+    @media (max-width: 480px) {
+      .info-card { padding: 20px 16px; }
+    }
+    .info-card h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 500;
+      font-size: 24px;
+      margin-bottom: 14px;
+    }
+    .info-card p { color: #9C948487; font-size: 14px; margin-bottom: 24px; }
+
+    .info-row {
+      display: flex; gap: 14px;
+      padding: 14px 0;
+      border-top: 1px solid #2A2620;
+    }
+    .info-row:first-of-type { border-top: none; }
+    .info-row .icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid #8A7136;
+      color: #C9A24B;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .info-row .icon svg { width: 16px; height: 16px; }
+    .info-row .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #6E665A;
+      margin-bottom: 4px;
+    }
+    .info-row .value { font-size: 14px; color: #EDE6D8; }
+
+    .form-card {
+      border: 1px solid #2A2620;
+      background: #15130F;
+      border-radius: 4px;
+      padding: clamp(24px, 4vw, 44px);
+    }
+    @media (max-width: 480px) {
+      .form-card { padding: 18px 14px; }
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 560px) { .field-row { grid-template-columns: 1fr; gap: 0; } }
+
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #6E665A;
+      margin-bottom: 6px;
+    }
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      background: #1D1A15;
+      border: 1px solid #2A2620;
+      color: #EDE6D8;
+      padding: 12px 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      border-radius: 2px;
+      transition: border-color .2s ease;
+    }
+    .field input::placeholder,
+    .field textarea::placeholder { color: #6E665A; }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus { outline: none; border-color: #8A7136; }
+    .field textarea { resize: vertical; min-height: 110px; }
+    .field select { appearance: none; cursor: pointer; }
+
+    .field-hp { position: absolute; left: -9999px; top: -9999px; }
+
+    .consent {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 22px;
+    }
+    .consent input { margin-top: 3px; accent-color: #C9A24B; width: 18px; height: 18px; flex-shrink: 0; }
+    .consent label { font-size: 13px; color: #9C948487; line-height: 1.4; }
+
+    .submit-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      padding: 16px 32px;
+      border-radius: 2px;
+      background: #C9A24B;
+      color: #0B0A09;
+      border: none;
+      cursor: pointer;
+      transition: all .25s ease;
+      display: inline-flex; align-items: center; gap: 10px;
+      width: 100%;
+      justify-content: center;
+    }
+    .submit-btn:hover { background: #dfb95c; }
+    .submit-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .submit-btn svg { width: 16px; height: 16px; }
+
+    .form-status {
+      margin-top: 16px;
+      font-size: 13px;
+      padding: 12px 14px;
+      border-radius: 2px;
+      display: none;
+    }
+    .form-status.show { display: block; }
+    .form-status.ok { background: rgba(154,110,75,0.08); border: 1px solid #8A7136; color: #C9A24B; }
+    .form-status.err { background: rgba(154,75,82,0.1); border: 1px solid #9A4B52; color: #C97B86; }
+
+    /* footer */
+    footer {
+      position: relative; z-index: 2;
+      padding: 40px clamp(16px, 5vw, 72px);
+      border-top: 1px solid #2A2620;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #6E665A;
+    }
+    @media (max-width: 600px) {
+      footer { flex-direction: column; text-align: center; gap: 6px; padding: 30px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- background carousel -->
+  <div class="bg-carousel" id="bgCarousel" aria-hidden="true"></div>
+  <div class="bg-scrim" aria-hidden="true"></div>
+  <div class="petal-field" id="petalField" aria-hidden="true"></div>
+
+  <!-- navigation -->
+  <nav class="nav">
+    <div class="mark">KimLicious & Kurt<span class="age">18+</span></div>
+    <ul class="nav-links">
+      <li><a href="index.html#gallery">Gallery</a></li>
+      <li><a href="index.html#featured">Featured</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+    <a href="index.html#access" class="cta">Sign in</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- mobile menu -->
+  <div class="nav-mobile" id="navMobile">
+    <a href="index.html#gallery">Gallery</a>
+    <a href="index.html#featured">Featured</a>
+    <a href="contact.html">Contact</a>
+    <a href="index.html#access" class="cta-mobile">Sign in</a>
+  </div>
+  <div class="nav-backdrop" id="navBackdrop"></div>
+
+  <!-- page head -->
+  <div class="page-head">
+    <div class="eyebrow">Inquiries</div>
+    <h1>Let's talk about <em>availing</em><br />our service.</h1>
+    <p>If you want Pleasure this is the place to be!</p>
+  </div>
+
+  <!-- contact -->
+  <div class="contact-wrap">
+    <div class="info-card">
+      <h3>Get in touch</h3>
+      <p>Prefer to reach out directly, or just want the essentials before you fill out the form? Here's how to find us.</p>
+      <div class="info-row">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div>
+        <div><div class="label">Email</div><div class="value">kimkurt2025@gmail.com</div></div>
+      </div>
+      <div class="info-row">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+        <div><div class="label">Response time</div><div class="value">Usually within 24 hours</div></div>
+      </div>
+      <div class="info-row">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg></div>
+        <div><div class="label">Availability</div><div class="value">By appointment / booking</div></div>
+      </div>
+      <div class="info-row">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 13l4 4L19 7"/></svg></div>
+        <div><div class="label">Privacy</div><div class="value">Your details are never shared</div></div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <form id="inquiryForm" action="https://formspree.io/f/xeeyjaqj" method="POST">
+        <input type="text" name="_gotcha" class="field-hp" tabindex="-1" autocomplete="off" />
+        <div class="field-row">
+          <div class="field">
+            <label for="name">Full name</label>
+            <input type="text" id="name" name="name" placeholder="Kim & Kurt" required />
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="phone">Phone <span style="opacity:.5;">(optional)</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="+1 (___) ___ ____" />
+          </div>
+          <div class="field">
+            <label for="service">Service of interest</label>
+            <select id="service" name="service" required>
+              <option value="" disabled selected>Select one</option>
+              <option value="membership">Membership access</option>
+              <option value="custom-content">Custom content request</option>
+              <option value="collaboration">Collaboration / partnership</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" placeholder="Tell us a bit about what you're looking for..." required></textarea>
+        </div>
+        <div class="consent">
+          <input type="checkbox" id="consent" name="consent" required />
+          <label for="consent">I confirm I am 18 years of age or older and agree to be contacted about this inquiry.</label>
+        </div>
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <span id="submitLabel">Send inquiry</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <div class="form-status" id="formStatus"></div>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <span>© <span id="year"></span> Kim & Kurt</span>
+    <span>All models depicted are placeholders · 18 U.S.C. 2257 notice goes here</span>
+  </footer>
+
+  <script>
+    (function() {
+      // set current year
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      // ---------- BACKGROUND CAROUSEL : YOUR OWN IMAGES ----------
+      // Replace these with your actual image file names.
+      const myPhotos = [
+        'kim14.jpg',
+        'kim15.jpg',
+        'kim16.jpg',
+        'kim17.jpg'
+      ];
+
+      const carousel = document.getElementById('bgCarousel');
+      carousel.innerHTML = '';
+
+      myPhotos.forEach((src, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'bg-slide' + (index === 0 ? ' active' : '');
+        slide.style.backgroundImage = `url("${src}")`;
+        carousel.appendChild(slide);
+      });
+
+      const slides = Array.from(carousel.children);
+      let current = 0;
+
+      if (slides.length > 1) {
+        setInterval(() => {
+          slides[current].classList.remove('active');
+          current = (current + 1) % slides.length;
+          slides[current].classList.add('active');
+        }, 6000);
+      }
+
+      // ---------- MOBILE HAMBURGER MENU ----------
+      const navToggle = document.getElementById('navToggle');
+      const navMobile = document.getElementById('navMobile');
+      const navBackdrop = document.getElementById('navBackdrop');
+
+      function setMenu(open) {
+        navMobile.classList.toggle('open', open);
+        navToggle.classList.toggle('open', open);
+        navBackdrop.classList.toggle('open', open);
+        navToggle.setAttribute('aria-expanded', open);
+        document.body.classList.toggle('menu-open', open);
+      }
+
+      navToggle.addEventListener('click', () => {
+        setMenu(!navMobile.classList.contains('open'));
+      });
+
+      navBackdrop.addEventListener('click', () => setMenu(false));
+
+      // close menu when a link is clicked
+      navMobile.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => setMenu(false));
+      });
+
+      // close on Escape key
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setMenu(false);
+      });
+
+      // close on resize to desktop
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 780) setMenu(false);
+      });
+
+      // ---------- PETALS (unchanged) ----------
+      const petalField = document.getElementById('petalField');
+      const petalColors = ['#C9A24B', '#9A4B52', '#C97B86', '#8A7136'];
+
+      function petalSVG(color) {
+        return `<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11 1C15 4 20 6 20 11C20 16 15 19 11 21C7 19 2 16 2 11C2 6 7 4 11 1Z" fill="${color}" opacity="0.75"/>
+        </svg>`;
+      }
+
+      function spawnPetal() {
+        const petal = document.createElement('div');
+        petal.className = 'petal';
+        const size = 12 + Math.random() * 16;
+        const left = Math.random() * 100;
+        const fallDuration = 9 + Math.random() * 9;
+        const swayDuration = 2.5 + Math.random() * 2.5;
+        const delay = -(Math.random() * fallDuration);
+        const color = petalColors[Math.floor(Math.random() * petalColors.length)];
+
+        petal.style.left = left + 'vw';
+        petal.style.width = size + 'px';
+        petal.style.height = size + 'px';
+        petal.style.animationDuration = `${fallDuration}s, ${swayDuration}s`;
+        petal.style.animationDelay = `${delay}s, ${delay}s`;
+        petal.innerHTML = petalSVG(color);
+
+        petalField.appendChild(petal);
+      }
+
+      const PETAL_COUNT = window.innerWidth < 600 ? 14 : 26;
+      for (let i = 0; i < PETAL_COUNT; i++) spawnPetal();
+
+      // ---------- FORM (unchanged) ----------
+      const form = document.getElementById('inquiryForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const submitLabel = document.getElementById('submitLabel');
+      const statusBox = document.getElementById('formStatus');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitLabel.textContent = 'Sending…';
+        statusBox.className = 'form-status';
+
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+          });
+
+          if (res.ok) {
+            statusBox.textContent = "Thanks — your inquiry has been sent. We'll be in touch soon.";
+            statusBox.classList.add('show', 'ok');
+            form.reset();
+          } else {
+            const data = await res.json().catch(() => null);
+            const msg = data && data.errors ? data.errors.map(x => x.message).join(', ') : 'Something went wrong. Please try again.';
+            statusBox.textContent = msg;
+            statusBox.classList.add('show', 'err');
+          }
+        } catch (err) {
+          statusBox.textContent = "Couldn't send right now — check your connection and try again.";
+          statusBox.classList.add('show', 'err');
+        } finally {
+          submitBtn.disabled = false;
+          submitLabel.textContent = 'Send inquiry';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
